@@ -175,8 +175,8 @@ export default function Home() {
   }, [selectedPlatform]);
 
   const usageReached = !isPro && usageCount >= maxUsage;
-  const isThreadActive = selectedPlatform === 'twitter' && isThreadMode;
-  const showThreadCards = isThreadActive;
+  const isThreadActive = isThreadView;
+  const showThreadCards = isThreadView;
   const variantOptionAvailable = isPro && selectedPlatform !== 'multi';
 
   useEffect(() => {
@@ -263,7 +263,7 @@ export default function Home() {
       }
 
       setGeneratedContent(displayContent);
-      const threadTweets = isThreadActive ? buildTweetsFromText(displayContent) : [{ id: `tweet-${Date.now()}`, text: displayContent }];
+      const threadTweets = isThreadView ? buildTweetsFromText(displayContent) : [{ id: `tweet-${Date.now()}`, text: displayContent }];
       setMainTweets(threadTweets);
 
       const variantItems =
