@@ -17,6 +17,7 @@ export async function POST(req: Request) {
       lengthOption,
       perspective,
       variantMode,
+      isXPremiumLongPost = false,
     } = await req.json();
 
     const variantCount = variantMode ? 3 : 1;
@@ -33,7 +34,8 @@ export async function POST(req: Request) {
       customInstruction,
       lengthOption,
       perspective,
-      variantCount
+      variantCount,
+      isXPremiumLongPost
     );
 
     if (Array.isArray(result)) {

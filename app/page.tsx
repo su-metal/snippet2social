@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Twitter, Instagram, Linkedin, Video, Sparkles, Mic, Eraser, 
-  AlertCircle, ChevronDown, ChevronUp, Target, Settings, Layers, 
+  AlertCircle, ChevronDown, ChevronUp, Target, Settings, Layers, ShieldAlert,
   Timer, Image as ImageIcon, Download, Copy, Lock, 
   Crown, User, Building2, Clock, X, Trash2, History,
   Languages, Ruler, Smile, Heart, Wand2
@@ -41,6 +41,8 @@ const buildTweetsFromText = (text: string): Tweet[] => {
 
 const joinTweets = (tweets: Tweet[]): string => tweets.map((t) => t.text).join('\n\n');
 
+const THREAD_DETECTION_REGEX = /[\(\[]?\d+\/\d+[\)\]]?/;
+const looksLikeThreadIndicator = (text: string): boolean => THREAD_DETECTION_REGEX.test(text);
 
 const LANGUAGES = ['Japanese', 'English', 'Spanish', 'French', 'Chinese', 'Korean'];
 
@@ -87,12 +89,13 @@ export default function Home() {
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isXPremiumLongPost, setIsXPremiumLongPost] = useState(false);
   const [isResultEditing, setIsResultEditing] = useState(false);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const isThreadLike = /[\(\[]?\d+\/\d+[\)\]]?/.test(generatedContent);
-  const isThreadView = selectedPlatform === 'twitter' && (isThreadMode || isThreadLike);
+  const isThreadLike = looksLikeThreadIndicator(generatedContent);
+  const isThreadView = selectedPlatform === 'twitter' && !isXPremiumLongPost && (isThreadMode || isThreadLike);
 
   useEffect(() => {
     const saved = localStorage.getItem('s2s_history');
@@ -172,7 +175,16 @@ export default function Home() {
   useEffect(() => {
     if (selectedPlatform !== 'twitter') setIsThreadMode(false);
     if (selectedPlatform !== 'tiktok') setIsLongVideo(false);
-  }, [selectedPlatform]);
+    if (selectedPlatform !== 'twitter' || !isPro) {
+      setIsXPremiumLongPost(false);
+    }
+  }, [selectedPlatform, isPro]);
+
+  useEffect(() => {
+    if (isXPremiumLongPost && isThreadMode) {
+      setIsThreadMode(false);
+    }
+  }, [isXPremiumLongPost, isThreadMode]);
 
   const usageReached = !isPro && usageCount >= maxUsage;
   const isThreadActive = isThreadView;
@@ -205,6 +217,9 @@ export default function Home() {
       return;
     }
 
+    const premiumLongActive = selectedPlatform === 'twitter' && isXPremiumLongPost;
+    const requestedThreadMode = premiumLongActive ? false : isThreadMode;
+
     setStatus('loading');
     setErrorMessage('');
     setGeneratedContent('');
@@ -230,13 +245,14 @@ export default function Home() {
           humorLevel,
           emotionLevel,
           postIntent,
-          isThreadMode,
+          isThreadMode: requestedThreadMode,
           isLongVideo,
           isPro,
           customInstruction,
           lengthOption,
           perspective,
           variantMode,
+          isXPremiumLongPost: premiumLongActive,
         }),
       });
 
@@ -263,7 +279,9 @@ export default function Home() {
       }
 
       setGeneratedContent(displayContent);
-      const threadTweets = isThreadView ? buildTweetsFromText(displayContent) : [{ id: `tweet-${Date.now()}`, text: displayContent }];
+      const shouldBuildThread =
+        selectedPlatform === 'twitter' && !premiumLongActive && (requestedThreadMode || looksLikeThreadIndicator(displayContent));
+      const threadTweets = shouldBuildThread ? buildTweetsFromText(displayContent) : [{ id: `tweet-${Date.now()}`, text: displayContent }];
       setMainTweets(threadTweets);
 
       const variantItems =
@@ -647,18 +665,46 @@ export default function Home() {
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">プラットフォーム専用モード</h4>
                     {selectedPlatform === 'twitter' && (
-                      <label className="flex items-center justify-between cursor-pointer group">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-brand-500 transition-colors">
-                            <Layers size={16} />
+                      <div className="space-y-3">
+                        <label className="flex items-center justify-between cursor-pointer group">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-brand-500 transition-colors">
+                              <Layers size={16} />
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-slate-700">スレッド形式で生成</div>
+                              <p className="text-[9px] text-slate-400">長文を複数の連投ツイートに分割します</p>
+                            </div>
                           </div>
-                          <div>
-                            <div className="text-xs font-bold text-slate-700">スレッド形式で生成</div>
-                            <p className="text-[9px] text-slate-400">長文を複数の連投ツイートに分割します</p>
+                          <input type="checkbox" checked={isThreadMode} onChange={() => setIsThreadMode(!isThreadMode)} className="w-5 h-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                        </label>
+                        <label className="flex items-center justify-between cursor-pointer group">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-brand-500 transition-colors">
+                              <ShieldAlert size={16} />
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-slate-700">X Premium 長文投稿</div>
+                              <p className="text-[9px] text-slate-400">
+                                X Premium（旧Twitter Blue）ユーザー向けに、1投稿で最大4000文字の長文を生成します。
+                              </p>
+                              {!isPro && (
+                                <div className="text-[8px] uppercase font-black text-amber-600 tracking-[0.3em] flex items-center gap-1">
+                                  <Lock size={10} />
+                                  PRO限定
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <input type="checkbox" checked={isThreadMode} onChange={() => setIsThreadMode(!isThreadMode)} className="w-5 h-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
-                      </label>
+                          <input
+                            type="checkbox"
+                            checked={isXPremiumLongPost}
+                            disabled={!isPro}
+                            onChange={() => setIsXPremiumLongPost((prev) => !prev)}
+                            className="w-5 h-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                          />
+                        </label>
+                      </div>
                     )}
                     {selectedPlatform === 'tiktok' && (
                       <label className="flex items-center justify-between cursor-pointer group">

@@ -39,7 +39,7 @@ const getMoodInstruction = (humor: number, emotion: number): string => {
   `;
 };
 
-const getLengthInstruction = (option: string): string => {
+const getLengthInstruction = (option: string, platformId: string, allowPremiumLong: boolean): string => {
   let instruction = "";
   switch (option) {
     case 'short':
@@ -51,7 +51,21 @@ const getLengthInstruction = (option: string): string => {
     default:
       instruction = "Write at a standard length, balancing detail and readability.";
   }
-  return `\n[Content Length: ${option.toUpperCase()}]\n${instruction} Note: Even for 'Long', strictly adhere to the hard character limits of the selected platform (e.g., 280 chars for Twitter single tweet).`;
+  const defaultLimitNote =
+    "Note: Even for 'Long', strictly adhere to the hard character limits of the selected platform (e.g., 280 characters for a Twitter single post).";
+  const premiumLongNote =
+    "Note: This is an X Premium long post—use up to 4,000 characters in a single message while keeping readability high.";
+  const limitNote = platformId === 'twitter' && allowPremiumLong ? premiumLongNote : defaultLimitNote;
+  return `\n[Content Length: ${option.toUpperCase()}]\n${instruction} ${limitNote}`;
+};
+
+const getPremiumLongInstruction = (enabled: boolean): string => {
+  if (!enabled) return "";
+  return `
+    \n[SPECIAL MODE: X PREMIUM LONG POST]
+    You are writing for an X Premium (formerly Twitter Blue) account. Compose one cohesive post up to 4,000 characters—no threads, no numbering (1/x).
+    Use short paragraphs, strong hook, and a conclusion. Keep readability high with line breaks or bullet points if necessary, but do not split into multiple tweets.
+  `;
 };
 
 const getIntentInstruction = (intent: string): string => {
@@ -121,7 +135,8 @@ export const generatePost = async (
   customInstruction: string = '',
   lengthOption: string = 'medium',
   perspective: string = 'personal',
-  variantCount: number = 1
+  variantCount: number = 1,
+  isPremiumLongPost: boolean = false
 ): Promise<string | string[]> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -139,7 +154,8 @@ export const generatePost = async (
   const perspectiveInstruction = getPerspectiveInstruction(perspective);
   const intentInstruction = getIntentInstruction(postIntent);
   const moodInstruction = getMoodInstruction(humorLevel, emotionLevel);
-  const lengthInstruction = getLengthInstruction(lengthOption);
+  const premiumLongActive = platformId === 'twitter' && isPremiumLongPost;
+  const lengthInstruction = getLengthInstruction(lengthOption, platformId, premiumLongActive);
   const threadInstruction = platformId === 'twitter' ? getThreadInstruction(isThreadMode) : "";
   const videoInstruction = platformId === 'tiktok' ? getVideoInstruction(isLongVideo) : "";
   const languageInstruction = `\n\nIMPORTANT: Output the final result in ${language}.`;
@@ -148,8 +164,19 @@ export const generatePost = async (
   const customUserInstruction = (isPro && customInstruction.trim()) 
     ? `\n\n[IMPORTANT USER INSTRUCTION]: ${customInstruction.trim()}`
     : "";
+  const premiumLongInstruction = platformId === 'twitter' ? getPremiumLongInstruction(premiumLongActive) : "";
   
-  let finalSystemInstruction = strategy.systemInstruction + perspectiveInstruction + intentInstruction + moodInstruction + lengthInstruction + threadInstruction + videoInstruction + languageInstruction + customUserInstruction;
+  let finalSystemInstruction =
+    strategy.systemInstruction +
+    perspectiveInstruction +
+    intentInstruction +
+    moodInstruction +
+    lengthInstruction +
+    threadInstruction +
+    videoInstruction +
+    languageInstruction +
+    customUserInstruction +
+    premiumLongInstruction;
 
   // Handle Multi-Post specifically with JSON output
   if (platformId === 'multi') {
