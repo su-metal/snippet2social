@@ -16,8 +16,10 @@ export async function POST(req: Request) {
       customInstruction,
       lengthOption,
       perspective,
+      variantMode,
     } = await req.json();
 
+    const variantCount = variantMode ? 3 : 1;
     const result = await generatePost(
       inputText,
       selectedPlatform,
@@ -30,8 +32,16 @@ export async function POST(req: Request) {
       isPro,
       customInstruction,
       lengthOption,
-      perspective
+      perspective,
+      variantCount
     );
+
+    if (Array.isArray(result)) {
+      return NextResponse.json({
+        result: result[0] ?? "",
+        variants: result,
+      });
+    }
 
     return NextResponse.json({ result });
   } catch (error) {

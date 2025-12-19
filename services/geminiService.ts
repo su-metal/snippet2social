@@ -109,7 +109,7 @@ const getVideoInstruction = (isLongVideo: boolean): string => {
  * Generates a social media post using the Gemini API.
  */
 export const generatePost = async (
-  inputText: string, 
+  inputText: string,
   platformId: string,
   language: string,
   humorLevel: number,
@@ -120,8 +120,9 @@ export const generatePost = async (
   isPro: boolean = false,
   customInstruction: string = '',
   lengthOption: string = 'medium',
-  perspective: string = 'personal'
-): Promise<string> => {
+  perspective: string = 'personal',
+  variantCount: number = 1
+): Promise<string | string[]> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   if (platformId === 'multi' && !isPro) {
@@ -132,7 +133,7 @@ export const generatePost = async (
   if (!strategy) throw new Error(`Invalid platform selected: ${platformId}`);
 
   // Select model based on Pro status or Multi mode
-  const modelName = (isPro || platformId === 'multi') ? 'gemini-2.5-flash' : 'gemini-2.5-flash';
+  const modelName = 'gemini-2.5-flash';
   console.log(`[Snippet2Social] Generating: model=${modelName}, platform=${platformId}, perspective=${perspective}`);
 
   const perspectiveInstruction = getPerspectiveInstruction(perspective);
@@ -158,40 +159,56 @@ export const generatePost = async (
       - Twitter: Viral thread or high-impact tweet.
       - LinkedIn: Professional and insight-driven.
       - Instagram: Engaging caption with emojis.
-      
+
       OUTPUT FORMAT: Strictly valid JSON.
     `;
   }
 
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: inputText,
-      config: {
-        systemInstruction: finalSystemInstruction,
-        temperature: 0.7,
-        ...(platformId === 'multi' ? {
+  const configOverrides = {
+    systemInstruction: finalSystemInstruction,
+    temperature: 0.7,
+    ...(platformId === 'multi'
+      ? {
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
             properties: {
               twitter: { type: Type.STRING },
               linkedin: { type: Type.STRING },
-              instagram: { type: Type.STRING }
+              instagram: { type: Type.STRING },
             },
-            required: ["twitter", "linkedin", "instagram"]
-          }
-        } : {})
-      }
-    });
+            required: ["twitter", "linkedin", "instagram"],
+          },
+        }
+      : {}),
+  };
 
-    const text = response.text;
-    if (!text) throw new Error("No content generated.");
-    return text;
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    throw error;
+  const generateOnce = async () => {
+    try {
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: inputText,
+        config: configOverrides,
+      });
+
+      const text = response.text;
+      if (!text) throw new Error("No content generated.");
+      return text;
+    } catch (error) {
+      console.error("Gemini API Error:", error);
+      throw error;
+    }
+  };
+
+  if (variantCount > 1) {
+    const variants: string[] = [];
+    for (let i = 0; i < variantCount; i += 1) {
+      variants.push(await generateOnce());
+    }
+    return variants;
   }
+
+  return generateOnce();
 };
 
 /**

@@ -53,6 +53,9 @@ export default function Home() {
   const [customInstruction, setCustomInstruction] = useState('');
   const [lengthOption, setLengthOption] = useState('medium');
   const [perspective, setPerspective] = useState('personal');
+  const [variantMode, setVariantMode] = useState(false);
+  const [variantResponses, setVariantResponses] = useState<string[] | null>(null);
+  const [copiedVariantIndex, setCopiedVariantIndex] = useState<number | null>(null);
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -143,7 +146,23 @@ export default function Home() {
   }, [selectedPlatform]);
 
   const usageReached = !isPro && usageCount >= maxUsage;
+  const variantOptionAvailable = isPro && selectedPlatform !== 'multi';
 
+  useEffect(() => {
+    if (!variantOptionAvailable && variantMode) {
+      setVariantMode(false);
+    }
+  }, [variantOptionAvailable, variantMode]);
+
+  useEffect(() => {
+    if (!variantMode) {
+      setVariantResponses(null);
+    }
+  }, [variantMode]);
+
+  useEffect(() => {
+    setCopiedVariantIndex(null);
+  }, [variantResponses]);
   const getCurrentPlatformKey = () => {
     return selectedPlatform === 'multi' ? activeTab : selectedPlatform;
   };
@@ -162,6 +181,8 @@ export default function Home() {
     setMultiContent(null);
     setImages({});
     setImageStatuses({});
+    setVariantResponses(null);
+    setCopiedVariantIndex(null);
 
     try {
       const response = await fetch('/api/generate-post', {
@@ -182,6 +203,7 @@ export default function Home() {
           customInstruction,
           lengthOption,
           perspective,
+          variantMode: variantMode && variantOptionAvailable,
         }),
       });
 
@@ -190,7 +212,8 @@ export default function Home() {
         throw new Error(errorData?.error ?? 'AI生成に失敗しました');
       }
 
-      const { result } = await response.json();
+      const { result, variants } = await response.json();
+      setVariantResponses(Array.isArray(variants) ? variants : null);
       
       if (selectedPlatform === 'multi') {
         try {
@@ -255,6 +278,12 @@ export default function Home() {
     navigator.clipboard.writeText(generatedContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyVariant = (text: string, index: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedVariantIndex(index);
+    setTimeout(() => setCopiedVariantIndex(null), 2000);
   };
 
   const getPlatformIcon = (id: string, size = 24) => {
@@ -577,6 +606,34 @@ export default function Home() {
                   </div>
                 )}
 
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between px-4 py-3 bg-white/70 border border-slate-100 rounded-2xl shadow-sm">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">3パターン生成</p>
+                      <p className="text-[11px] text-slate-400">
+                        PRO限定で同じ条件から別表現の候補を3つ受け取れます（マルチプラットフォーム選択時は無効）。
+                      </p>
+                    </div>
+                    <label className="inline-flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={variantMode}
+                        disabled={!variantOptionAvailable}
+                        onChange={() => setVariantMode(!variantMode)}
+                        className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                      />
+                      <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${variantMode ? 'text-brand-600' : 'text-slate-500'}`}>
+                        {variantMode ? 'ON' : 'OFF'}
+                      </span>
+                    </label>
+                  </div>
+                  {!variantOptionAvailable && (
+                    <p className="text-[11px] text-amber-600">
+                      PROかつ単一プラットフォーム選択時のみ利用可能です。
+                    </p>
+                  )}
+                </div>
+
                 {/* Custom Instruction (Pro Only) */}
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center justify-between">
@@ -673,6 +730,40 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {variantResponses?.length ? (
+              <section className="space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">他の提案 (Pro)</h3>
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-600">VARIANT MODE</span>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {variantResponses.map((variant, index) => (
+                    <div key={`variant-${index}`} className="flex flex-col gap-3 rounded-[2rem] border border-slate-200 bg-white/90 p-4 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+                          VAR-{index + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyVariant(variant, index)}
+                          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 rounded-full border border-slate-200 px-3 py-1 transition-colors hover:border-brand-200 hover:text-brand-600"
+                        >
+                          <Copy className="w-3 h-3" />
+                          {copiedVariantIndex === index ? 'COPIED' : 'COPY'}
+                        </button>
+                      </div>
+                      <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap break-words">
+                        {variant}
+                      </p>
+                      {index === 0 && (
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-slate-400">上部の結果はこのバリエーションです。</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
 
             {/* Generated Image Card */}
             {imageStatuses[getCurrentPlatformKey()] && (
