@@ -175,13 +175,8 @@ export default function Home() {
 
   const usageReached = !isPro && usageCount >= maxUsage;
   const isThreadActive = selectedPlatform === 'twitter' && isThreadMode;
-  const variantOptionAvailable = isPro && selectedPlatform !== 'multi' && isThreadActive;
-
-  useEffect(() => {
-    if (!isThreadActive && variantMode) {
-      setVariantMode(false);
-    }
-  }, [isThreadActive, variantMode]);
+  const showThreadCards = isThreadActive;
+  const variantOptionAvailable = isPro && selectedPlatform !== 'multi';
 
   useEffect(() => {
     if (!variantMode) {
@@ -240,7 +235,7 @@ export default function Home() {
           customInstruction,
           lengthOption,
           perspective,
-          variantMode: variantMode && variantOptionAvailable,
+          variantMode,
         }),
       });
 
@@ -769,125 +764,157 @@ export default function Home() {
               </div>
             )}
 
-            <section className="space-y-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-700">スレッド</h3>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-[0.3em]">各ツイート単位で編集・コピーできます</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleCopyMainThread}
-                  disabled={mainTweets.length === 0}
-                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.4em] transition-colors ${copiedAll ? 'border-brand-200 bg-brand-50 text-brand-600' : 'border-slate-200 text-slate-500 hover:border-brand-200 hover:text-brand-600'}`}
-                >
-                  <Copy className="w-3 h-3" />
-                  {copiedAll ? 'COPIED!' : 'COPY ALL'}
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {mainTweets.length > 0 ? (
-                  mainTweets.map((tweet, index) => (
-                    <div key={tweet.id} className="bg-white shadow-sm rounded-[2rem] border border-slate-200">
-                      <div className="flex items-center justify-between gap-3 px-4 py-3 bg-slate-50/80 border-b border-slate-100">
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">
-                          {index + 1}/{mainTweets.length}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(tweet.text);
-                            setCopiedTweetId(tweet.id);
-                            setTimeout(() => setCopiedTweetId(null), 2000);
-                          }}
-                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.4em] transition-colors ${copiedTweetId === tweet.id ? 'border-brand-200 bg-brand-50 text-brand-600' : 'border-slate-200 text-slate-400 hover:border-brand-200 hover:text-brand-600'}`}
-                        >
-                          <Copy className="w-3 h-3" />
-                          {copiedTweetId === tweet.id ? 'COPIED' : 'COPY'}
-                        </button>
-                      </div>
-                      <textarea
-                        value={tweet.text}
-                        onChange={(e) => handleTweetTextChange(tweet.id, e.target.value)}
-                        className="w-full bg-white px-4 py-5 text-base leading-relaxed text-slate-700 outline-none resize-none rounded-b-[2rem] border-0"
-                        rows={4}
-                      />
+            {showThreadCards ? (
+              <>
+                <section className="space-y-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-700">スレッド</h3>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-[0.3em]">各ツイート単位で編集・コピーできます</p>
                     </div>
-                  ))
-                ) : (
-                  <div className="bg-white shadow-sm rounded-[2rem] border border-slate-200 p-4">
-                    <textarea
-                      value={generatedContent}
-                      readOnly
-                      className="w-full bg-transparent text-base leading-relaxed text-slate-600 outline-none resize-none"
-                      rows={4}
-                    />
+                    <button
+                      type="button"
+                      onClick={handleCopyMainThread}
+                      disabled={mainTweets.length === 0}
+                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.4em] transition-colors ${copiedAll ? 'border-brand-200 bg-brand-50 text-brand-600' : 'border-slate-200 text-slate-500 hover:border-brand-200 hover:text-brand-600'}`}
+                    >
+                      <Copy className="w-3 h-3" />
+                      {copiedAll ? 'COPIED!' : 'COPY ALL'}
+                    </button>
                   </div>
-                )}
-              </div>
-            </section>
 
-            <section className="space-y-3">
-              <button
-                type="button"
-                onClick={() => setIsVariationOpen((prev) => !prev)}
-                className="flex items-center justify-between w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-[10px] font-black uppercase tracking-[0.35em] transition-colors hover:border-brand-200 hover:text-brand-600"
-              >
-                <span>Variations</span>
-                <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500">
-                  {isVariationOpen ? 'OPEN' : 'CLOSED'}
-                  {isVariationOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </span>
-              </button>
-              {isVariationOpen && (
-                <div className="overflow-x-auto">
-                  <div className="flex snap-x gap-4 px-2 pb-3">
-                    {variations.map((variant) => (
-                      <div
-                        key={variant.id}
-                        className="snap-start min-w-[80vw] sm:min-w-[42vw] rounded-[2rem] border border-slate-200 bg-white p-4 shadow-lg shadow-slate-200/40"
-                      >
-                        <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                          <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">{variant.label}</p>
-                            <p className="text-[10px] text-slate-400">プロだけの別解</p>
-                          </div>
-                          <div className="flex gap-2">
+                  <div className="space-y-4">
+                    {mainTweets.length > 0 ? (
+                      mainTweets.map((tweet, index) => (
+                        <div key={tweet.id} className="bg-white shadow-sm rounded-[2rem] border border-slate-200">
+                          <div className="flex items-center justify-between gap-3 px-4 py-3 bg-slate-50/80 border-b border-slate-100">
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">
+                              {index + 1}/{mainTweets.length}
+                            </span>
                             <button
                               type="button"
-                              onClick={() => handleCopyVariant(variant)}
-                              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[9px] font-black uppercase tracking-[0.3em] transition-colors ${copiedVariantId === variant.id ? 'border-brand-200 bg-brand-50 text-brand-600' : 'border-slate-200 text-slate-400 hover:border-brand-200 hover:text-brand-600'}`}
+                              onClick={() => {
+                                navigator.clipboard.writeText(tweet.text);
+                                setCopiedTweetId(tweet.id);
+                                setTimeout(() => setCopiedTweetId(null), 2000);
+                              }}
+                              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.4em] transition-colors ${copiedTweetId === tweet.id ? 'border-brand-200 bg-brand-50 text-brand-600' : 'border-slate-200 text-slate-400 hover:border-brand-200 hover:text-brand-600'}`}
                             >
                               <Copy className="w-3 h-3" />
-                              {copiedVariantId === variant.id ? 'COPIED' : 'COPY'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleSetVariantMain(variant)}
-                              className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-[0.3em] transition-colors ${activeVariantId === variant.id ? 'border-brand-500 bg-brand-600 text-white' : 'border-slate-200 text-slate-500 hover:border-brand-200 hover:text-brand-700'}`}
-                            >
-                              {activeVariantId === variant.id ? 'ACTIVE' : 'SET AS MAIN'}
+                              {copiedTweetId === tweet.id ? 'COPIED' : 'COPY'}
                             </button>
                           </div>
+                          <textarea
+                            value={tweet.text}
+                            onChange={(e) => handleTweetTextChange(tweet.id, e.target.value)}
+                            className="w-full bg-white px-4 py-5 text-base leading-relaxed text-slate-700 outline-none resize-none rounded-b-[2rem] border-0"
+                            rows={4}
+                          />
                         </div>
+                      ))
+                    ) : (
+                      <div className="bg-white shadow-sm rounded-[2rem] border border-slate-200 p-4">
                         <textarea
-                          value={variant.body}
-                          onChange={(e) => handleVariantTextChange(variant.id, e.target.value)}
-                          className="mt-4 w-full rounded-[1.5rem] border border-slate-100 px-3 py-4 text-sm leading-relaxed text-slate-700 outline-none resize-none"
-                          rows={6}
+                          value={generatedContent}
+                          readOnly
+                          className="w-full bg-transparent text-base leading-relaxed text-slate-600 outline-none resize-none"
+                          rows={4}
                         />
-                      </div>
-                    ))}
-                    {!variations.length && (
-                      <div className="min-w-[80vw] sm:min-w-[42vw] rounded-[2rem] border border-dashed border-slate-200 bg-slate-50 p-4 text-[10px] uppercase tracking-[0.4em] text-slate-400">
-                        バリエーションを生成するとここに並びます
                       </div>
                     )}
                   </div>
+                </section>
+
+              </>
+            ) : (
+              <section className="space-y-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-700">全文表示</h3>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-[0.3em]">分割なしでレスポンス全体を操作</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyMainThread}
+                    disabled={!generatedContent}
+                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.4em] transition-colors ${copiedAll ? 'border-brand-200 bg-brand-50 text-brand-600' : 'border-slate-200 text-slate-500 hover:border-brand-200 hover:text-brand-600'}`}
+                  >
+                    <Copy className="w-3 h-3" />
+                    {copiedAll ? 'COPIED!' : 'COPY ALL'}
+                  </button>
                 </div>
-              )}
-            </section>
+                <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-5">
+                  <textarea
+                    value={generatedContent}
+                    onChange={(e) => setGeneratedContent(e.target.value)}
+                    className="w-full bg-transparent text-base leading-relaxed text-slate-700 outline-none resize-none"
+                    rows={8}
+                  />
+                </div>
+              </section>
+            )}
+            {variations.length > 0 && (
+              <section className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setIsVariationOpen((prev) => !prev)}
+                  className="flex items-center justify-between w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-[10px] font-black uppercase tracking-[0.35em] transition-colors hover:border-brand-200 hover:text-brand-600"
+                >
+                  <span>Variations</span>
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500">
+                    {isVariationOpen ? 'OPEN' : 'CLOSED'}
+                    {isVariationOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </span>
+                </button>
+                {isVariationOpen && (
+                  <div className="overflow-x-auto">
+                    <div className="flex snap-x gap-4 px-2 pb-3">
+                      {variations.map((variant) => (
+                        <div
+                          key={variant.id}
+                          className="snap-start min-w-[80vw] sm:min-w-[42vw] rounded-[2rem] border border-slate-200 bg-white p-4 shadow-lg shadow-slate-200/40"
+                        >
+                          <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">{variant.label}</p>
+                              <p className="text-[10px] text-slate-400">プロだけの別解</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleCopyVariant(variant)}
+                                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[9px] font-black uppercase tracking-[0.3em] transition-colors ${copiedVariantId === variant.id ? 'border-brand-200 bg-brand-50 text-brand-600' : 'border-slate-200 text-slate-400 hover:border-brand-200 hover:text-brand-600'}`}
+                              >
+                                <Copy className="w-3 h-3" />
+                                {copiedVariantId === variant.id ? 'COPIED' : 'COPY'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSetVariantMain(variant)}
+                                className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-[0.3em] transition-colors ${activeVariantId === variant.id ? 'border-brand-500 bg-brand-600 text-white' : 'border-slate-200 text-slate-500 hover:border-brand-200 hover:text-brand-700'}`}
+                              >
+                                {activeVariantId === variant.id ? 'ACTIVE' : 'SET AS MAIN'}
+                              </button>
+                            </div>
+                          </div>
+                          <textarea
+                            value={variant.body}
+                            onChange={(e) => handleVariantTextChange(variant.id, e.target.value)}
+                            className="mt-4 w-full rounded-[1.5rem] border border-slate-100 px-3 py-4 text-sm leading-relaxed text-slate-700 outline-none resize-none"
+                            rows={6}
+                          />
+                        </div>
+                      ))}
+                      {!variations.length && (
+                        <div className="min-w-[80vw] sm:min-w-[42vw] rounded-[2rem] border border-dashed border-slate-200 bg-slate-50 p-4 text-[10px] uppercase tracking-[0.4em] text-slate-400">
+                          バリエーションを生成するとここに並びます
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
             {/* Generated Image Card */}
             {imageStatuses[getCurrentPlatformKey()] && (
               <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-200 overflow-hidden ring-1 ring-slate-900/5 animate-slide-up">
