@@ -20,11 +20,16 @@ type ImageStatusMap = Record<string, 'idle' | 'loading' | 'success' | 'error'>;
 type Tweet = { id: string; text: string };
 type Variation = { id: string; label: string; body: string };
 
+const THREAD_NUMBER_PATTERN = '(?:\\d+/(?:\\d+|[xX])|\\d+\\.\\d+)';
+const THREAD_SPLIT_REGEX = new RegExp(`(?=(?:^|\\n)(?:${THREAD_NUMBER_PATTERN}|\\[${THREAD_NUMBER_PATTERN}\\]))`);
+const THREAD_NUMBER_CLEANUP_REGEX = new RegExp(`^(?:${THREAD_NUMBER_PATTERN}|\\[${THREAD_NUMBER_PATTERN}\\])\\.?\\s*`);
+const THREAD_DETECTION_REGEX = new RegExp(`[\\(\\[]?${THREAD_NUMBER_PATTERN}[\\)\\]]?`);
+
 const splitIntoThreadParts = (text: string): string[] => {
   return text
-    .split(/(?=(?:^|\n)(?:\d+[\/.]\d+|\[\d+\/\d+\]))/)
+    .split(THREAD_SPLIT_REGEX)
     .map((t) => t.trim())
-    .map((t) => t.replace(/^(?:\d+[\/.]\d+|\[\d+\/\d+\])\.?\s*/, ''))
+    .map((t) => t.replace(THREAD_NUMBER_CLEANUP_REGEX, ''))
     .filter(Boolean);
 };
 
@@ -41,7 +46,6 @@ const buildTweetsFromText = (text: string): Tweet[] => {
 
 const joinTweets = (tweets: Tweet[]): string => tweets.map((t) => t.text).join('\n\n');
 
-const THREAD_DETECTION_REGEX = /[\(\[]?\d+\/\d+[\)\]]?/;
 const looksLikeThreadIndicator = (text: string): boolean => THREAD_DETECTION_REGEX.test(text);
 
 const LANGUAGES = ['Japanese', 'English', 'Spanish', 'French', 'Chinese', 'Korean'];
