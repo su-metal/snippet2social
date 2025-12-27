@@ -226,7 +226,7 @@ export const generatePost = async (
   if (!strategy) throw new Error(`Invalid platform selected: ${platformId}`);
 
   // Select model based on Pro status or Multi mode
-  const modelName = 'gemini-2.5-flash-lite';
+  const modelName = 'gemini-2.5-flash';
   console.log(`[Snippet2Social] Generating: model=${modelName}, platform=${platformId}, perspective=${perspective}`);
 
   const perspectiveInstruction = getPerspectiveInstruction(perspective);
@@ -330,7 +330,7 @@ export const generatePostImage = async (postContent: string, platform: string): 
 
   // 1. Prompt Refinement (Art Direction)
   const promptRefiner = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-lite',
+    model: 'gemini-2.5-flash',
     contents: `Convert the following social media post into a high-quality English image generation prompt. 
     Subject: Main topic of the post.
     Style: Modern, professional, cinematic lighting, 4k, artistic. 
