@@ -108,12 +108,39 @@ export const MULTI_STRATEGY: PlatformStrategy = {
   systemInstruction: 'Generate 3 distinct posts in JSON format: 1. Twitter Thread (Viral), 2. LinkedIn (Professional), 3. Instagram (Engaging Caption).'
 };
 
+export const GOOGLE_MAP_INTENT_IDS = {
+  THANK_YOU: 'googlemap-thankyou',
+  APOLOGY: 'googlemap-apology',
+  ANSWER: 'googlemap-answer',
+  AUTO: 'googlemap-auto',
+};
+
+export const GOOGLE_MAP_STRATEGY: PlatformStrategy = {
+  id: 'googlemap',
+  name: 'Google Map Review Reply',
+  iconName: 'map-pin',
+  maxChars: 2000,
+  description: 'Generate sincere replies to Google Maps reviews.',
+  systemInstruction: `
+    You are a frontline staff member writing replies on behalf of a business responding to Google Maps reviews.
+    Input: The user submits the text of a Google Maps review that needs a polite reply.
+    Guidelines:
+    1. Start with a respectful acknowledgment of the reviewer’s experience.
+    2. Mention one or two detailed points from the review while paraphrasing rather than repeating.
+    3. Avoid inviting them to contact the business, call, email, or visit in person.
+    4. Keep the tone sincere, empathetic, and concise (roughly 150-250 characters).
+    5. Do not include hashtags, numbered lists, or promotional copy.
+    Output ONLY the reply text.
+  `,
+};
+
 export const STRATEGIES: Record<string, PlatformStrategy> = {
   twitter: TWITTER_STRATEGY,
   instagram: INSTAGRAM_STRATEGY,
   linkedin: LINKEDIN_STRATEGY,
   tiktok: TIKTOK_STRATEGY,
   multi: MULTI_STRATEGY,
+  googlemap: GOOGLE_MAP_STRATEGY,
 };
 
 export const DEFAULT_STRATEGY_ID = 'twitter';
