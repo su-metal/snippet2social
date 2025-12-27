@@ -47,7 +47,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ result });
   } catch (error) {
-    console.error("Gemini API Error (generate-post):", error);
+    console.error("OpenAI API Error (generate-post):", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "内部エラー" },
       { status: 500 }

@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const url = await generatePostImage(postContent, platform);
     return NextResponse.json({ url });
   } catch (error) {
-    console.error("Gemini API Error (generate-image):", error);
+    console.error("OpenAI API Error (generate-image):", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "内部エラー" },
       { status: 500 }
