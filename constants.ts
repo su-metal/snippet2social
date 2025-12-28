@@ -1,12 +1,11 @@
-
-import { PlatformStrategy } from './types';
+import { PlatformStrategy } from "./types";
 
 export const TWITTER_STRATEGY: PlatformStrategy = {
-  id: 'twitter',
-  name: 'X (Twitter)',
-  iconName: 'twitter',
+  id: "twitter",
+  name: "X (Twitter)",
+  iconName: "twitter",
   maxChars: 280,
-  description: 'Optimized for engagement, hashtags, and threads.',
+  description: "Optimized for engagement, hashtags, and threads.",
   systemInstruction: `
     You are an expert social media manager specializing in X (Twitter).
     Your task is to convert the user's raw text/memo into an engaging X post.
@@ -20,15 +19,15 @@ export const TWITTER_STRATEGY: PlatformStrategy = {
     6. Emoji: Use emojis sparingly but effectively to add visual interest.
     
     Output ONLY the post text. Do not add meta-commentary like "Here is your tweet".
-  `
+  `,
 };
 
 export const INSTAGRAM_STRATEGY: PlatformStrategy = {
-  id: 'instagram',
-  name: 'Instagram',
-  iconName: 'instagram',
+  id: "instagram",
+  name: "Instagram",
+  iconName: "instagram",
   maxChars: 2200,
-  description: 'Visual storytelling with empathy and high engagement.',
+  description: "Visual storytelling with empathy and high engagement.",
   systemInstruction: `
     You are a popular Instagram influencer and content creator.
     Your task is to convert the user's raw text into an emotionally resonating Instagram caption.
@@ -44,15 +43,15 @@ export const INSTAGRAM_STRATEGY: PlatformStrategy = {
     5. Hashtags: Generate 5-10 relevant, high-reach hashtags at the very bottom, separated by dots or space.
 
     Output ONLY the caption text.
-  `
+  `,
 };
 
 export const LINKEDIN_STRATEGY: PlatformStrategy = {
-  id: 'linkedin',
-  name: 'LinkedIn',
-  iconName: 'linkedin',
+  id: "linkedin",
+  name: "LinkedIn",
+  iconName: "linkedin",
   maxChars: 3000,
-  description: 'Professional insights and business leadership.',
+  description: "Professional insights and business leadership.",
   systemInstruction: `
     You are a thought leader and business executive on LinkedIn.
     Your task is to convert the user's raw text into a professional, insight-driven post.
@@ -68,15 +67,15 @@ export const LINKEDIN_STRATEGY: PlatformStrategy = {
     5. Call to Action: Ask a professional question to spark debate in the comments.
 
     Output ONLY the post text.
-  `
+  `,
 };
 
 export const TIKTOK_STRATEGY: PlatformStrategy = {
-  id: 'tiktok',
-  name: 'TikTok / Shorts',
-  iconName: 'video',
+  id: "tiktok",
+  name: "TikTok / Shorts",
+  iconName: "video",
   maxChars: 2000,
-  description: 'Viral video scripts with hooks and visual cues.',
+  description: "Viral video scripts with hooks and visual cues.",
   systemInstruction: `
     You are a viral video scriptwriter specializing in TikTok, YouTube Shorts, and Instagram Reels.
     Your task is to convert the user's input into a high-retention 60-second video script.
@@ -96,31 +95,35 @@ export const TIKTOK_STRATEGY: PlatformStrategy = {
     3. Tone: Energetic, fast-paced, and engaging. Keep sentences short.
 
     Output the full script.
-  `
+  `,
 };
 
 export const MULTI_STRATEGY: PlatformStrategy = {
-  id: 'multi',
-  name: 'Multi-Post (All)',
-  iconName: 'layers',
+  id: "multi",
+  name: 'Multi-Post (X + Instagram)',
+  iconName: "layers",
   maxChars: 3000,
-  description: 'Generate for X, LinkedIn, and Insta at once. (Pro Only)',
-  systemInstruction: 'Generate 3 distinct posts in JSON format: 1. Twitter Thread (Viral), 2. LinkedIn (Professional), 3. Instagram (Engaging Caption).'
+  description: "Generate posts for X and Instagram at once. (Pro Only)",
+  systemInstruction: `
+Generate posts in JSON format:
+1. X (Twitter) post optimized for engagement.
+2. Instagram caption optimized for reach and hashtags.
+`,
 };
 
 export const GOOGLE_MAP_INTENT_IDS = {
-  THANK_YOU: 'googlemap-thankyou',
-  APOLOGY: 'googlemap-apology',
-  ANSWER: 'googlemap-answer',
-  AUTO: 'googlemap-auto',
+  THANK_YOU: "googlemap-thankyou",
+  APOLOGY: "googlemap-apology",
+  ANSWER: "googlemap-answer",
+  AUTO: "googlemap-auto",
 };
 
 export const GOOGLE_MAP_STRATEGY: PlatformStrategy = {
-  id: 'googlemap',
-  name: 'Google Map Review Reply',
-  iconName: 'map-pin',
+  id: "googlemap",
+  name: "Google Map Review Reply",
+  iconName: "map-pin",
   maxChars: 2000,
-  description: 'Generate sincere replies to Google Maps reviews.',
+  description: "Generate sincere replies to Google Maps reviews.",
   systemInstruction: `
     You are a frontline staff member writing replies on behalf of a business responding to Google Maps reviews.
     Input: The user submits the text of a Google Maps review that needs a polite reply.
@@ -143,4 +146,4 @@ export const STRATEGIES: Record<string, PlatformStrategy> = {
   googlemap: GOOGLE_MAP_STRATEGY,
 };
 
-export const DEFAULT_STRATEGY_ID = 'twitter';
+export const DEFAULT_STRATEGY_ID = "twitter";

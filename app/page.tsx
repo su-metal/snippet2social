@@ -45,6 +45,7 @@ const THREAD_DETECTION_REGEX = /[\(\[]?\d+\/\d+[\)\]]?/;
 const looksLikeThreadIndicator = (text: string): boolean => THREAD_DETECTION_REGEX.test(text);
 
 const LANGUAGES = ['Japanese', 'English', 'Spanish', 'French', 'Chinese', 'Korean'];
+const VISIBLE_PLATFORM_IDS = ['twitter', 'instagram', 'googlemap', 'multi'];
 
 const INTENTS = [
   { id: 'default', label: '指定なし (Default)' },
@@ -179,6 +180,12 @@ export default function Home() {
       setIsXPremiumLongPost(false);
     }
   }, [selectedPlatform, isPro]);
+
+  useEffect(() => {
+    if (!VISIBLE_PLATFORM_IDS.includes(selectedPlatform)) {
+      setSelectedPlatform(DEFAULT_STRATEGY_ID);
+    }
+  }, [selectedPlatform]);
 
   useEffect(() => {
     if (isXPremiumLongPost && isThreadMode) {
@@ -480,8 +487,10 @@ export default function Home() {
         {/* Step 1: Platform Selection */}
         <section className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 ring-1 ring-slate-900/5 animate-slide-up">
           <label className="text-xs font-bold text-slate-400 uppercase mb-4 block tracking-widest px-1">1. 配信プラットフォーム</label>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-            {Object.values(STRATEGIES).map(s => {
+          <div className="grid grid-cols-2 sm:grid-flow-col sm:auto-cols-fr gap-2.5">
+            {VISIBLE_PLATFORM_IDS.map((id) => {
+              const s = STRATEGIES[id];
+              if (!s) return null;
               const isLocked = s.id === 'multi' && !isPro;
               const isSelected = selectedPlatform === s.id;
               return (
@@ -504,7 +513,9 @@ export default function Home() {
 
         {/* Step 2: Input Textarea */}
         <section className="space-y-3 animate-slide-up">
-          <label className="text-xs font-bold text-slate-400 uppercase block tracking-widest px-1">2. メモ・下書き入力</label>
+          <label className="text-xs font-bold text-slate-400 uppercase block tracking-widest px-1">
+            {selectedPlatform === 'googlemap' ? '2. 口コミを入力してください' : '2. メモ・下書き入力'}
+          </label>
           <div className="relative group">
             <textarea 
               ref={textareaRef} 
