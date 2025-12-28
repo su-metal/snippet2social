@@ -9,7 +9,7 @@ import {
   Crown, User, Building2, Clock, X, Trash2, History,
   Languages, Ruler, Smile, Heart, Wand2
 } from 'lucide-react';
-import { useLocale } from '../context/LocaleContext';
+import { useLocale, type TranslationKey } from '../context/LocaleContext';
 import { STRATEGIES, DEFAULT_STRATEGY_ID } from '../constants';
 import { HistoryItem } from '../types';
 import { Button } from '../components/Button';
@@ -49,13 +49,22 @@ const looksLikeThreadIndicator = (text: string): boolean => THREAD_DETECTION_REG
 const LANGUAGES = ['Japanese', 'English', 'Spanish', 'French', 'Chinese', 'Korean'];
 const VISIBLE_PLATFORM_IDS = ['twitter', 'instagram', 'googlemap', 'multi'];
 
-const INTENTS = [
-  { id: 'default', label: '指定なし (Default)' },
-  { id: 'promotion', label: '📣 宣伝・告知 (Promotion)' },
-  { id: 'story', label: '📖 ストーリー・感想 (Story)' },
-  { id: 'educational', label: '💡 お役立ち情報 (Educational)' },
-  { id: 'engagement', label: '❓ 問いかけ・交流 (Engagement)' },
+type IntentDefinition = {
+  id: string;
+  labelKey: TranslationKey;
+};
+
+const INTENTS: IntentDefinition[] = [
+  { id: 'default', labelKey: 'intent.default.label' },
+  { id: 'promotion', labelKey: 'intent.promotion.label' },
+  { id: 'educational', labelKey: 'intent.educational.label' },
+  { id: 'story', labelKey: 'intent.story.label' },
+  { id: 'engagement', labelKey: 'intent.engagement.label' },
 ];
+
+const VISIBLE_INTENTS = INTENTS.filter((intent) => intent.id !== 'default');
+
+
 
 export default function Home() {
   const { isPro, usageCount, maxUsage, incrementUsage } = useUser();
@@ -553,13 +562,13 @@ export default function Home() {
               <Target size={14} /> 3. 投稿の目的
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {INTENTS.map((intent) => (
+              {VISIBLE_INTENTS.map((intent) => (
                 <button
                   key={intent.id}
                   onClick={() => setPostIntent(intent.id)}
                   className={`px-4 py-3.5 rounded-2xl border text-sm font-bold text-left transition-all ${postIntent === intent.id ? 'bg-slate-900 border-slate-900 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}
                 >
-                  {intent.label}
+                  {t(intent.labelKey)}
                 </button>
               ))}
             </div>
