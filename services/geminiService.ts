@@ -97,6 +97,64 @@ const getPremiumLongInstruction = (enabled: boolean): string => {
   `;
 };
 
+const MULTI_LENGTH_GUIDES: Record<string, { twitter: string; instagram: string }> = {
+  short: {
+    twitter:
+      "Keep the X post to 1-2 focused sentences (about 90-140 characters) that stay well under the 280-character cap and use at most two hashtags.",
+    instagram:
+      "Write 2-3 short sentences (about 50-90 words) so the caption feels noticeably shorter than the medium/long outputs.",
+  },
+  medium: {
+    twitter:
+      "Use 3-4 sentences (about 150-220 characters) that balance detail with clarity while still remaining a single tweet at 280 characters.",
+    instagram:
+      "Produce 4-6 sentences (about 100-140 words) with a gentle hook, a couple of supporting details, and 5-7 hashtags at the end.",
+  },
+  long: {
+    twitter:
+      "Deliver 4-5 sentences (about 220-280 characters) that expand on the story or rationale while still fitting into one tweet; keep punctuation clean.",
+    instagram:
+      "Craft 6-8 sentences (about 150-200 words) that go deeper into context or emotion, describe the scene, and finish with 6-10 hashtags.",
+  },
+};
+
+const getMultiLengthGuidance = (option: string, allowPremiumLong: boolean): string => {
+  const guide = MULTI_LENGTH_GUIDES[option] || MULTI_LENGTH_GUIDES.medium;
+  const limitReminder = allowPremiumLong
+    ? "If X Premium Long mode applies elsewhere, you may expand toward 4,000 characters while keeping a single cohesive post."
+    : "Every X output must still stay within a single 280-character tweet.";
+  return `
+    [MULTI-PLATFORM LENGTH GUIDANCE]
+    Selected length option: ${option.toUpperCase()}.
+    - X (Twitter): ${guide.twitter} ${limitReminder}
+    - Instagram: ${guide.instagram}
+  `;
+};
+
+const getMultiPlatformDistinctionInstruction = (
+  allowPremiumLong: boolean
+): string => {
+  const twitterLengthNote = allowPremiumLong
+    ? "You may expand toward 4,000 characters while keeping a single cohesive, hook-first post."
+    : "Keep the Twitter output within a single tweet (≤ 280 characters).";
+  return `
+    [MULTI-PLATFORM DISTINCT FORMATTING]
+    Twitter (X):
+      - Hook-first structure: start with a punchy sentence, then 1-2 paragraphs with minimal line breaks.
+      - Limit emoji use to at most 1 character; keep the CTA short, direct, and urgent.
+      - ${twitterLengthNote}
+    Instagram:
+      - Craft a caption-style narrative with 4-8 lines separated by line breaks and an overall soft, conversational tone.
+      - Include 2-6 emojis and finish with a hashtag block at the end if helpful.
+      - Use descriptive language, more context, and an expressive CTA that invites saves/comments.
+    Do NOT reuse the same sentences or phrases between Twitter and Instagram.
+    If a sentence appears in the Twitter output, it must not appear in the Instagram output.
+    The two outputs must be meaningfully different in wording, structure, and tone.
+    Before outputting the final JSON, verify that twitter.text and instagram.caption are meaningfully different.
+    If they are similar, rewrite one of them until they differ.
+  `;
+};
+
 const getIntentInstruction = (intent: string): string => {
   switch (intent) {
     case "promotion":
@@ -236,6 +294,8 @@ const buildSystemInstruction = (
   structureInstruction: string,
   customUserInstruction: string,
   premiumLongInstruction: string,
+  multiLengthGuidance: string,
+  multiDistinctInstruction: string,
   isMulti: boolean
 ): string => {
   const components = [
@@ -255,6 +315,12 @@ const buildSystemInstruction = (
   ];
 
   if (isMulti) {
+    if (multiLengthGuidance) {
+      components.push(multiLengthGuidance);
+    }
+    if (multiDistinctInstruction) {
+      components.push(multiDistinctInstruction);
+    }
     components.push(`
       \n[MULTI-PLATFORM OUTPUT REQUIREMENTS]
       You must provide distinct content for Twitter, LinkedIn, and Instagram.
@@ -324,6 +390,14 @@ export const generatePost = async (
   const premiumLongInstruction = platformId === "twitter" ? getPremiumLongInstruction(premiumLongActive) : "";
   const googleMapContextInstruction = platformId === "googlemap" ? GOOGLE_MAP_CONTEXT_INSTRUCTION : "";
   const structureInstruction = getStructureInstruction(platformId, postIntent);
+  const multiLengthGuidance =
+    platformId === "multi"
+      ? getMultiLengthGuidance(lengthOption, premiumLongActive)
+      : "";
+  const multiDistinctInstruction =
+    platformId === "multi"
+      ? getMultiPlatformDistinctionInstruction(premiumLongActive)
+      : "";
   const systemInstruction = buildSystemInstruction(
     strategy.systemInstruction,
     perspectiveInstruction,
@@ -338,6 +412,8 @@ export const generatePost = async (
     structureInstruction,
     customUserInstruction,
     premiumLongInstruction,
+    multiLengthGuidance,
+    multiDistinctInstruction,
     platformId === "multi"
   );
   const userMessage = buildUserMessage(inputText, platformId);

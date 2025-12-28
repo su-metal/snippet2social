@@ -134,6 +134,45 @@ const getPremiumLongInstruction = (enabled: boolean): string => {
   `;
 };
 
+
+
+const MULTI_LENGTH_GUIDES: Record<string, { twitter: string; instagram: string }> = {
+  short: {
+    twitter:
+      "Keep the X post to 1-2 focused sentences (about 90-140 characters) that stay well under the 280-character cap and use at most two hashtags.",
+    instagram:
+      "Write 2-3 short sentences (about 50-90 words) so the caption feels noticeably shorter than the medium/long outputs.",
+  },
+  medium: {
+    twitter:
+      "Use 3-4 sentences (about 150-220 characters) that balance detail with clarity while still remaining a single tweet at 280 characters.",
+    instagram:
+      "Produce 4-6 sentences (about 100-140 words) with a gentle hook, a couple of supporting details, and 5-7 hashtags at the end.",
+  },
+  long: {
+    twitter:
+      "Deliver 4-5 sentences (about 220-280 characters) that expand on the story or rationale while still fitting into one tweet; keep punctuation clean.",
+    instagram:
+      "Craft 6-8 sentences (about 150-200 words) that go deeper into context or emotion, describe the scene, and finish with 6-10 hashtags.",
+  },
+};
+
+const getMultiLengthGuidance = (
+  option: string,
+  allowPremiumLong: boolean
+): string => {
+  const guide = MULTI_LENGTH_GUIDES[option] || MULTI_LENGTH_GUIDES.medium;
+  const limitReminder = allowPremiumLong
+    ? "If X Premium Long mode applies elsewhere, you may expand toward 4,000 characters while keeping a single cohesive post."
+    : "Every X output must still stay within a single 280-character tweet.";
+  return `
+    [MULTI-PLATFORM LENGTH GUIDANCE]
+    Selected length option: ${option.toUpperCase()}.
+    - X (Twitter): ${guide.twitter} ${limitReminder}
+    - Instagram: ${guide.instagram}
+  `;
+};
+
 const getIntentInstruction = (intent: string): string => {
   // NOTE:
   // - SNS向け intent は 4種 (promotion / educational / story / engagement)
