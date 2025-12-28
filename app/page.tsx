@@ -15,6 +15,8 @@ import { HistoryItem } from '../types';
 import { Button } from '../components/Button';
 import { useUser } from '../context/UserContext';
 import LocalizedText from './components/i18n/LocalizedText';
+import Link from "next/link";
+
 
 type MultiContent = Record<'twitter' | 'linkedin' | 'instagram', unknown>;
 type ImageMap = Record<string, string>;
@@ -517,6 +519,15 @@ export default function Home() {
             <Clock size={22} />
             {history.length > 0 && <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-brand-500 rounded-full border-2 border-white" />}
           </button>
+
+          <Link
+  href="/onboarding"
+  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+  aria-label="お店設定"
+>
+  <span className="text-[12px]">お店設定</span>
+</Link>
+
 
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-tight transition-all duration-300 ${isPro ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
             {isPro ? (

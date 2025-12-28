@@ -3,6 +3,7 @@ import React from "react";
 import "./globals.css";
 import { Providers } from "../components/Providers";
 import { DevTools } from "../components/DevTools";
+import { OnboardingGate } from "./components/OnboardingGate";
 
 // 1. アプリ名とPWA設定 (ここがMisepoの看板になります)
 export const metadata: Metadata = {
@@ -41,7 +42,7 @@ export default function RootLayout({
       */}
       <body className="antialiased bg-slate-50 text-slate-900 min-h-screen safe-area-top safe-area-bottom select-none">
         <Providers>
-          {children}
+          <OnboardingGate>{children}</OnboardingGate>
           <DevTools />
         </Providers>
       </body>
