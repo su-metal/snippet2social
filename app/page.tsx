@@ -661,7 +661,7 @@ export default function Home() {
                 </div>
 
                 {/* Perspective */}
-                <div className="space-y-3">
+                {/* <div className="space-y-3">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><User size={12} /> 発信者視点</label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
@@ -685,7 +685,7 @@ export default function Home() {
                       </div>
                     </button>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Humor & Emotion Sliders */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">

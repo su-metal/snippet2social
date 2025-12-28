@@ -1,22 +1,13 @@
 import OpenAI from "openai";
 import { STRATEGIES, GOOGLE_MAP_INTENT_IDS } from "../constants";
 
-const getPerspectiveInstruction = (perspective: string): string => {
-  if (perspective === "business") {
-    return `
-      \n[Perspective: Official / Business]
-      ROLE: Official Business Account (Owner/Staff). Speak as 'We', 'Our shop', or 'I (the owner)'.
-      Tone: Professional, welcoming, and reliable.
-      Goal: Promote YOUR own products, services, or brand.
-      PROHIBITED: Do not act as a customer or third-party (e.g., Avoid 'I found this shop', 'I recommend this product').
-    `;
-  }
+const getPerspectiveInstruction = (): string => {
   return `
-    \n[Perspective: Personal / Reviewer]
-    ROLE: Personal User / Influencer / Enthusiast. Speak as 'I', 'Me'.
-    Tone: Enthusiastic, authentic, sharing a discovery or personal experience.
-    Goal: Share a review, thought, or recommendation.
-    PROHIBITED: Do not sound like a corporate ad or an official representative of the brand/shop mentioned.
+    \n[Perspective: Official / Business]
+    ROLE: Official Business Account (Owner/Staff). Speak as 'We', 'Our shop', or 'I (the owner)'.
+    Tone: Professional, welcoming, reliable, and gently promotional.
+    Goal: Promote YOUR own products, services, or brand while sounding like the official shop account.
+    PROHIBITED: Do not act as a customer or third-party (e.g., Avoid 'I found this shop', 'I recommend this product').
   `;
 };
 
@@ -194,7 +185,7 @@ Structure:
 3) CTA (1 line)
 Avoid:
 - Inventing discounts, dates, limited offers not in user input.
-- Overly corporate language if perspective is personal.
+      - Avoid overly corporate language; stay friendly and conversational.
 `,
 
     educational: `
@@ -410,7 +401,7 @@ export const generatePost = async (
   isPro: boolean = false,
   customInstruction: string = "",
   lengthOption: string = "medium",
-  perspective: string = "personal",
+  _perspective: string = "personal",
   variantCount: number = 1,
   isPremiumLongPost: boolean = false
 ): Promise<string | string[]> => {
@@ -425,10 +416,10 @@ export const generatePost = async (
 
   const modelName = "gpt-4.1-mini";
   console.log(
-    `[Snippet2Social] Generating: model=${modelName}, platform=${platformId}, perspective=${perspective}`
+    `[Snippet2Social] Generating: model=${modelName}, platform=${platformId}, persona=official-business`
   );
 
-  const perspectiveInstruction = getPerspectiveInstruction(perspective);
+  const perspectiveInstruction = getPerspectiveInstruction();
   const intentInstruction = getIntentInstruction(postIntent);
   const moodInstruction = getMoodInstruction(
     platformId,
@@ -486,6 +477,7 @@ Do not mix other languages. Do not include translations or bilingual parentheses
     finalSystemInstruction += `
       \n[MULTI-PLATFORM OUTPUT REQUIREMENTS]
       You must provide distinct content for Twitter, LinkedIn, and Instagram.
+      All outputs should sound like the official shop account, using "we", "our", or "I (the owner/staff)" as the speaker.
       - Twitter: Viral thread or high-impact tweet.
       - LinkedIn: Professional and insight-driven.
       - Instagram: Engaging caption with emojis.
@@ -494,17 +486,16 @@ Do not mix other languages. Do not include translations or bilingual parentheses
     `;
   }
 
-  const buildUserMessage = (text: string) => {
-    const trimmed = text.trim();
-    return `
+const buildUserMessage = (text: string) => {
+  const trimmed = text.trim();
+  return `
 User Input:
 ${trimmed}
 
 Platform: ${strategy.name}
 Length Option: ${lengthOption}
-Perspective: ${perspective}
 `;
-  };
+};
 
   const generateOnce = async () => {
     try {
