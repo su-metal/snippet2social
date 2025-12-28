@@ -135,15 +135,85 @@ const getPremiumLongInstruction = (enabled: boolean): string => {
 };
 
 const getIntentInstruction = (intent: string): string => {
+  // NOTE:
+  // - SNS向け intent は 4種 (promotion / educational / story / engagement)
+  // - Google Map は GOOGLE_MAP_INTENT_IDS.* を使う
+  // - intent が空 or default の場合は「自動」扱い（強い型指定をしない）
+
+  // ---- SNS intents (4) ----
+  const SNS_INTENTS: Record<string, string> = {
+    promotion: `
+[Post Intent: Promotion / 宣伝・告知]
+Goal: Drive action (visit / reservation / purchase / inquiry) without sounding pushy.
+Must include:
+- What: what is offered (menu/service/event)
+- Why now: a concrete, non-fake reason (limited quantity, seasonal, today-only, new arrival, etc.) ONLY if supported by user input; otherwise omit urgency.
+- CTA: a simple next step (e.g., "ご予約はプロフィールから", "本日もお待ちしております", "気になったら保存してね")
+Structure:
+1) Hook (1 line)
+2) Details (2-4 lines)
+3) CTA (1 line)
+Avoid:
+- Inventing discounts, dates, limited offers not in user input.
+- Overly corporate language if perspective is personal.
+`,
+
+    educational: `
+[Post Intent: Educational / 豆知識・コツ]
+Goal: Provide genuinely useful tips that improve trust and save the owner’s time.
+Must include:
+- 2–5 practical tips OR a mini checklist
+- Simple explanation ("なぜそれが効くか" を1行)
+- End with a soft CTA (save/share/comment is okay, no hard selling)
+Structure:
+1) Hook: problem statement or promise
+2) Tips: bullet points preferred (platform-appropriate)
+3) Wrap-up: one-line summary + soft CTA
+Avoid:
+- Generic vague advice with no actionable steps.
+- Medical/legal claims or guarantees.
+`,
+
+    story: `
+[Post Intent: Story / 日常・裏側]
+Goal: Humanize the shop/owner; build familiarity and brand warmth.
+Must include:
+- A small scene from daily work (prep, behind-the-scenes, a tiny episode)
+- One specific detail (ingredient, tool, moment, short dialogue, weather, etc.)
+- A gentle close (no hard CTA; "今日もお待ちしてます" 程度はOK)
+Structure:
+1) Scene (1–2 lines)
+2) Detail + feeling (2–4 lines)
+3) Soft close (1 line)
+Avoid:
+- Turning it into an ad copy. This is not a promotion post.
+`,
+
+    engagement: `
+[Post Intent: Engagement / 問いかけ]
+Goal: Generate comments with a clear, easy-to-answer prompt.
+Must include:
+- One clear question OR a 2-choice poll
+- Provide context so the audience can answer without thinking hard
+- Encourage reply ("コメントで教えて", "どっち派？" etc.)
+Structure:
+1) Setup (1–2 lines)
+2) Question (1 line, explicit "?" or Japanese question ending)
+3) Nudge to comment (1 line)
+Examples of question styles:
+- 2択: "A派？B派？"
+- 予想: "どっちだと思う？"
+- 体験共有: "おすすめの◯◯ある？"
+Avoid:
+- Asking multiple unrelated questions.
+- Questions that require private info or off-platform actions.
+`,
+  };
+
+  if (SNS_INTENTS[intent]) return SNS_INTENTS[intent];
+
+  // ---- Google Map intents (existing) ----
   switch (intent) {
-    case "promotion":
-      return "\n[Post Intent: Promotion]\nWrite a persuasive promotional post. Focus on benefits, urgency, and include a strong Call to Action (CTA).";
-    case "story":
-      return "\n[Post Intent: Storytelling]\nWrite a personal story or narrative. Focus on experience, emotions, and storytelling.";
-    case "educational":
-      return "\n[Post Intent: Educational]\nWrite an educational post. Focus on providing value, tips, or 'how-to' knowledge.";
-    case "engagement":
-      return "\n[Post Intent: Engagement]\nWrite to generate comments. Ask questions and encourage interaction with the audience.";
     case GOOGLE_MAP_INTENT_IDS.THANK_YOU:
       return "\n[Post Intent: Google Map — Thank You]\nRespond with gratitude, reference the positive points in the review, and close with a warm welcome back.";
     case GOOGLE_MAP_INTENT_IDS.APOLOGY:
@@ -153,6 +223,8 @@ const getIntentInstruction = (intent: string): string => {
     case GOOGLE_MAP_INTENT_IDS.AUTO:
       return "\n[Post Intent: Google Map — Auto]\nDetermine whether the review is praise, a complaint, or a question, then use the structure for that scenario.";
     default:
+      // default / empty / unknown => no additional intent constraint
+      // (UI側で「指定なし」を消しても、ここで落ちない)
       return "";
   }
 };
@@ -338,7 +410,11 @@ export const generatePost = async (
     platformId === "twitter" ? getThreadInstruction(isThreadMode) : "";
   const videoInstruction =
     platformId === "tiktok" ? getVideoInstruction(isLongVideo) : "";
-  const languageInstruction = `\n\nIMPORTANT: Output the final result in ${language}.`;
+  const languageInstruction = `
+[LANGUAGE]
+Output must be written entirely in ${language}.
+Do not mix other languages. Do not include translations or bilingual parentheses unless the user explicitly asks.
+`;
   const googleMapContextInstruction =
     platformId === "googlemap" ? GOOGLE_MAP_CONTEXT_INSTRUCTION : "";
   const structureInstruction = getStructureInstruction(platformId, postIntent);
