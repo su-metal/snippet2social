@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { STRATEGIES, GOOGLE_MAP_INTENT_IDS } from "../constants";
+import type { PlatformStrategy } from "../types";
 
 const getPerspectiveInstruction = (): string => {
   return `
@@ -9,6 +10,29 @@ const getPerspectiveInstruction = (): string => {
     Goal: Promote YOUR own products, services, or brand while sounding like the official shop account.
     PROHIBITED: Do not act as a customer or third-party (e.g., Avoid 'I found this shop', 'I recommend this product').
   `;
+};
+
+const getAntiThirdPersonGuardrails = (): string => {
+  return `
+[ANTI-THIRD-PERSON GUARDRAILS - STRICT]
+You are the business owner/staff writing about YOUR OWN shop.
+Even if the perspective is correct, DO NOT use influencer/reviewer phrasing.
+
+BANNED PHRASES (JP):
+見つけました, 行ってきました, おすすめのお店, このお店は, ここは, してみた, 最高でした, リピ確, 神○○
+
+BANNED PHRASES (EN):
+I found, we found, this place, I tried, highly recommend this spot
+
+WORDING RULES:
+- Do not refer to the shop as "this shop/this place/here". Use "当店/私たち/店主" instead.
+- Replace “discovery/review” vibe with “we prepared/we offer/our commitment” vibe.
+
+FINAL SELF-CHECK (mandatory):
+- If any banned phrase appears, rewrite that sentence.
+- If any sentence sounds like a customer or outsider, rewrite it using "当店/私たち/店主" voice.
+- Ensure at least one explicit business-subject phrase appears: 当店 / 私たち / 店主 / うち
+`;
 };
 
 const getHumorGuidance = (platformId: string, level: number): string => {
@@ -125,9 +149,10 @@ const getPremiumLongInstruction = (enabled: boolean): string => {
   `;
 };
 
-
-
-const MULTI_LENGTH_GUIDES: Record<string, { twitter: string; instagram: string }> = {
+const MULTI_LENGTH_GUIDES: Record<
+  string,
+  { twitter: string; instagram: string }
+> = {
   short: {
     twitter:
       "Keep the X post to 1-2 focused sentences (about 90-140 characters) that stay well under the 280-character cap and use at most two hashtags.",
@@ -161,6 +186,226 @@ const getMultiLengthGuidance = (
     Selected length option: ${option.toUpperCase()}.
     - X (Twitter): ${guide.twitter} ${limitReminder}
     - Instagram: ${guide.instagram}
+  `;
+};
+
+const getMultiPlatformDistinctionInstruction = (
+  allowPremiumLong: boolean
+): string => {
+  const twitterLengthNote = allowPremiumLong
+    ? "You may expand toward 4,000 characters while keeping a single cohesive, hook-first post."
+    : "Keep the Twitter output within a single tweet (up to 280 characters).";
+  return `
+    [MULTI-PLATFORM DISTINCT FORMATTING]
+    Twitter (X):
+      - Hook-first: lead with a punchy sentence followed by 1-2 compact paragraphs.
+      - Limit emoji use to at most one character and keep the CTA short, direct, and urgent.
+      - ${twitterLengthNote}
+    LinkedIn:
+      - Deliver a professional insight with a short headline plus 2-3 concise sentences focused on takeaways.
+      - Keep the formatting calm (minimal emojis) and end with a reflective, yet actionable CTA.
+    Instagram:
+      - Craft a caption-style narrative with 4-8 lines separated by blank lines and vivid, descriptive language.
+      - Include 2-6 emojis and finish with an expressive hashtag block if it fits the tone.
+      - Make the CTA warm and inviting without reusing the Twitter wording.
+    Do NOT reuse the same sentences, metaphors, or CTA between X, LinkedIn, and Instagram.
+    Before finalizing the JSON bundle, confirm every platform copy reads noticeably different; if any appear similar, rewrite while keeping the specified tone and length.
+  `;
+};
+
+type HardLengthTarget = {
+  label: string;
+  rangeDescription: string;
+  note?: string;
+  min?: number;
+  max?: number;
+  unit?: "characters" | "words";
+};
+
+const RELATIVE_LENGTH_PERCENTAGES: Record<string, [number, number]> = {
+  short: [0.25, 0.4],
+  medium: [0.45, 0.65],
+  long: [0.7, 0.95],
+};
+
+const TWITTER_LENGTH_CONFIG: Record<string, { min: number; max: number }> = {
+  short: { min: 90, max: 140 },
+  medium: { min: 150, max: 220 },
+  long: { min: 220, max: 280 },
+};
+
+const INSTAGRAM_WORD_CONFIG: Record<
+  string,
+  { min: number; max: number; sentences: string }
+> = {
+  short: { min: 50, max: 90, sentences: "2-3 sentences" },
+  medium: { min: 100, max: 140, sentences: "4-6 sentences" },
+  long: { min: 150, max: 200, sentences: "6-8 sentences" },
+};
+
+const GOOGLE_MAP_LENGTH_CONFIG: Record<
+  string,
+  { jp: string; en: string; sentences: string }
+> = {
+  short: { jp: "60-120", en: "20-40", sentences: "1-2 sentences" },
+  medium: { jp: "120-220", en: "40-80", sentences: "3-4 sentences" },
+  long: { jp: "220-400", en: "80-140", sentences: "5-7 sentences" },
+};
+
+const getRelativeLengthRange = (
+  maxChars: number,
+  lengthOption: string
+): { min: number; max: number } => {
+  const percentages = RELATIVE_LENGTH_PERCENTAGES[lengthOption] || [0.45, 0.65];
+  const min = Math.max(1, Math.ceil(maxChars * percentages[0]));
+  const max = Math.min(
+    maxChars,
+    Math.max(min, Math.floor(maxChars * percentages[1]))
+  );
+  return { min, max };
+};
+
+const buildHardLengthInstruction = (
+  targets: HardLengthTarget[],
+  extra?: string
+): string => {
+  const targetLines = targets
+    .map((target) => {
+      const note = target.note ? ` (${target.note})` : "";
+      return `  TARGET RANGE (${target.label}): ${target.rangeDescription}${note}`;
+    })
+    .join("\n");
+  const rewriteReminder =
+    "  MUST REWRITE IF OUT OF RANGE: If the result slips outside these ranges, rewrite while preserving the chosen Humor/Emotion tone and platform hard limits; lengthOption dictates structure, not the other way around.";
+  return `
+    [HARD LENGTH TARGET]
+${targetLines}
+${rewriteReminder}
+${extra ? `\n${extra}` : ""}
+  `;
+};
+
+const getPlatformHardLengthTarget = (
+  platformId: string,
+  lengthOption: string,
+  language: string,
+  strategy: PlatformStrategy,
+  allowPremiumLong: boolean
+): HardLengthTarget => {
+  if (platformId === "twitter") {
+    const baseRange = TWITTER_LENGTH_CONFIG[lengthOption] || {
+      min: 150,
+      max: 220,
+    };
+    const max =
+      allowPremiumLong && lengthOption === "long" ? 4000 : baseRange.max;
+    return {
+      label: strategy.name,
+      rangeDescription: `${baseRange.min}-${max} characters`,
+      min: baseRange.min,
+      max,
+      unit: "characters",
+    };
+  }
+
+  if (platformId === "instagram") {
+    const config =
+      INSTAGRAM_WORD_CONFIG[lengthOption] || INSTAGRAM_WORD_CONFIG.medium;
+    return {
+      label: strategy.name,
+      rangeDescription: `${config.min}-${config.max} words`,
+      note: config.sentences,
+      min: config.min,
+      max: config.max,
+      unit: "words",
+    };
+  }
+
+  if (platformId === "googlemap") {
+    const config =
+      GOOGLE_MAP_LENGTH_CONFIG[lengthOption] || GOOGLE_MAP_LENGTH_CONFIG.medium;
+    return {
+      label: strategy.name,
+      rangeDescription: `${config.jp} Japanese characters or ${config.en} English words`,
+      note: `${config.sentences} (match the guidance above for ${language}).`,
+    };
+  }
+
+  const relativeRange = getRelativeLengthRange(strategy.maxChars, lengthOption);
+  return {
+    label: strategy.name,
+    rangeDescription: `${relativeRange.min}-${relativeRange.max} characters`,
+    min: relativeRange.min,
+    max: relativeRange.max,
+    unit: "characters",
+  };
+};
+
+const getHardLengthTargets = (
+  platformId: string,
+  lengthOption: string,
+  language: string,
+  strategy: PlatformStrategy,
+  allowPremiumLong: boolean
+): string => {
+  if (platformId === "multi") {
+    const twitterTarget = getPlatformHardLengthTarget(
+      "twitter",
+      lengthOption,
+      language,
+      STRATEGIES.twitter,
+      allowPremiumLong
+    );
+    const instagramTarget = getPlatformHardLengthTarget(
+      "instagram",
+      lengthOption,
+      language,
+      STRATEGIES.instagram,
+      false
+    );
+    const compliance = `
+    Length Compliance Check:
+    - twitter.text must fall within ${twitterTarget.rangeDescription}. If it exceeds, trim non-essential detail before adjusting tone; if it falls below ${twitterTarget.min} characters when long, add another concrete detail derived from the input without inventing facts.
+    - instagram.caption must stay within ${instagramTarget.rangeDescription}. For short outputs that feel long, cut optional sentences first; for long outputs that feel short, expand by describing one more specific element from the request.
+    - Apply these checks before emitting the JSON object so both twitter.text and instagram.caption honor the chosen lengthOption.
+    `;
+    return buildHardLengthInstruction(
+      [twitterTarget, instagramTarget],
+      compliance
+    );
+  }
+
+  const target = getPlatformHardLengthTarget(
+    platformId,
+    lengthOption,
+    language,
+    strategy,
+    allowPremiumLong
+  );
+  return buildHardLengthInstruction([target]);
+};
+
+const VARIANT_STYLE_GUIDE = (variantIndex: number): string => {
+  const normalizedIndex = Math.min(Math.max(variantIndex, 1), 3);
+  const labels = ["A", "B", "C"];
+  const variantDescriptions = [
+    `Variant A (「結論→根拠→行動」型): begin with a clear conclusion or takeaway in the first line, follow with the reason/appeal, and end with a direct CTA. Avoid bullet lists (use them only if truly necessary). Keep the tone unchanged while keeping each sentence lean and readable.`,
+    `Variant B (「ベネフィット→具体→証拠」型): start by highlighting the customer benefit, then add one more concrete detail drawn from the input (ingredient, time, quantity, or process) before closing with evidence/trust plus a CTA. Maintain the same tone and refrain from inventing facts.`,
+    `Variant C (「ミニ場面描写→こだわり→ひとこと」型): open with a short scene-setting line (weather, prep moment, shop vibe), transition to the shop's dedication/detail, and finish with a gentle closing. Let rhythm and line breaks create the distinction while keeping the tone consistent.`,
+  ];
+  const commonInstructions = `
+Do NOT change the humor/emotion settings. Do NOT increase/decrease emoji usage beyond what the Tone settings already require.
+Respect the lengthOption and platform hard limits; do not expand or shorten beyond the current length guide.
+LengthOption is the highest priority; do not vary overall length for differentiation—use structure, rhythm, and sentence placement alone.
+Ensure each variant has a different opening line, information order, and closing/CTA; avoid reusing the same phrasing, metaphor, or punctuation rhythm across the outputs.
+Before finalizing, verify the variants differ in structure, opening, and closing/CTA. If they are too similar, rewrite them while preserving the tone and length constraints described above.
+  `;
+  const variantLabel = labels[normalizedIndex - 1];
+  const variantText = variantDescriptions[normalizedIndex - 1];
+  return `
+    [VARIANT ${variantLabel} STYLE GUIDE]
+    ${variantText}
+${commonInstructions}
   `;
 };
 
@@ -457,7 +702,7 @@ Do not mix other languages. Do not include translations or bilingual parentheses
       ? getPremiumLongInstruction(premiumLongActive)
       : "";
 
-  let finalSystemInstruction = buildSystemInstruction(
+  const baseSystemInstruction = buildSystemInstruction(
     strategy.systemInstruction,
     perspectiveInstruction,
     intentInstruction,
@@ -472,9 +717,17 @@ Do not mix other languages. Do not include translations or bilingual parentheses
     customUserInstruction,
     premiumLongInstruction
   );
-
-  if (platformId === "multi") {
-    finalSystemInstruction += `
+  const multiLengthGuidanceSegment =
+    platformId === "multi"
+      ? getMultiLengthGuidance(lengthOption, premiumLongActive)
+      : "";
+  const multiDistinctInstructionSegment =
+    platformId === "multi"
+      ? getMultiPlatformDistinctionInstruction(premiumLongActive)
+      : "";
+  const multiOutputRequirements =
+    platformId === "multi"
+      ? `
       \n[MULTI-PLATFORM OUTPUT REQUIREMENTS]
       You must provide distinct content for Twitter, LinkedIn, and Instagram.
       All outputs should sound like the official shop account, using "we", "our", or "I (the owner/staff)" as the speaker.
@@ -483,26 +736,48 @@ Do not mix other languages. Do not include translations or bilingual parentheses
       - Instagram: Engaging caption with emojis.
 
       OUTPUT FORMAT: Strictly valid JSON.
-    `;
-  }
+    `
+      : "";
+  const hardLengthInstructionSegment = getHardLengthTargets(
+    platformId,
+    lengthOption,
+    language,
+    strategy,
+    premiumLongActive
+  );
 
-const buildUserMessage = (text: string) => {
-  const trimmed = text.trim();
-  return `
+  const antiThirdPersonSegment = getAntiThirdPersonGuardrails();
+  const assembleSystemInstruction = (variantIndex: number): string => {
+    return [
+      baseSystemInstruction,
+      multiLengthGuidanceSegment,
+      hardLengthInstructionSegment,
+      antiThirdPersonSegment,
+      multiDistinctInstructionSegment,
+      VARIANT_STYLE_GUIDE(variantIndex),
+      multiOutputRequirements,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  };
+
+  const buildUserMessage = (text: string) => {
+    const trimmed = text.trim();
+    return `
 User Input:
 ${trimmed}
 
 Platform: ${strategy.name}
 Length Option: ${lengthOption}
 `;
-};
+  };
 
-  const generateOnce = async () => {
+  const generateOnce = async (variantIndex: number = 1) => {
     try {
       const response = await openai.chat.completions.create({
         model: modelName,
         messages: [
-          { role: "system", content: finalSystemInstruction },
+          { role: "system", content: assembleSystemInstruction(variantIndex) },
           { role: "user", content: buildUserMessage(inputText) },
         ],
         temperature: 0.7,
@@ -518,11 +793,13 @@ Length Option: ${lengthOption}
   };
 
   if (variantCount > 1) {
-    const promises = Array.from({ length: variantCount }, () => generateOnce());
+    const promises = Array.from({ length: variantCount }, (_, index) =>
+      generateOnce(index + 1)
+    );
     return await Promise.all(promises);
   }
 
-  return generateOnce();
+  return generateOnce(variantCount >= 1 ? 1 : 1);
 };
 
 export const generatePostImage = async (
