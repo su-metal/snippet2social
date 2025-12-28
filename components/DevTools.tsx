@@ -136,7 +136,7 @@ export const DevTools: React.FC = () => {
         {isExpanded && (
           <div className="p-4 space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex flex-col gap-1">
-              <span className="text-[9px] text-slate-400 font-bold uppercase">Plan Status</span>
+              <span className="text-[9px] text-slate-400 font-bold uppercase">{t('devtools.planStatusLabel')}</span>
               <div className={`text-xs font-bold px-2 py-2 rounded-lg flex items-center justify-between ${isPro ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-300'}`}>
                 <div className="flex items-center gap-2">
                   {isPro ? <UserCheck className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
@@ -148,7 +148,7 @@ export const DevTools: React.FC = () => {
 
             <div className="flex flex-col gap-1">
               <div className="flex justify-between items-end">
-                <span className="text-[9px] text-slate-400 font-bold uppercase">Usage Tracker</span>
+                <span className="text-[9px] text-slate-400 font-bold uppercase">{t('devtools.usageTrackerLabel')}</span>
                 <span className="text-[10px] font-mono text-slate-300">
                   {usageCount} / {isPro ? 'UNLIMITED' : maxUsage}
                 </span>

@@ -1,33 +1,15 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { translate, type TranslationKey as I18nTranslationKey, type LocaleCode } from '../app/i18n';
 
-export type UiLocale = 'ja' | 'en';
-export type TranslationKey =
-  | 'devtools.languageLabel'
-  | 'devtools.languageOption.ja'
-  | 'devtools.languageOption.en'
-  | 'home.generatedPostsSectionTitle';
+export type UiLocale = LocaleCode;
+export type TranslationKey = I18nTranslationKey;
 
 const DEFAULT_UI_LOCALE: UiLocale = 'en';
 const LOCALE_STORAGE_KEY = 'app_lang';
 const LANGUAGE_QUERY_PARAM = 'lang';
 const VALID_LOCALES: UiLocale[] = ['ja', 'en'];
-
-const TRANSLATIONS: Record<UiLocale, Record<TranslationKey, string>> = {
-  en: {
-    'devtools.languageLabel': 'Language',
-    'devtools.languageOption.ja': 'Japanese',
-    'devtools.languageOption.en': 'English',
-    'home.generatedPostsSectionTitle': 'Generated Post',
-  },
-  ja: {
-    'devtools.languageLabel': '言語',
-    'devtools.languageOption.ja': '日本語',
-    'devtools.languageOption.en': '英語',
-    'home.generatedPostsSectionTitle': 'AI生成された投稿',
-  },
-};
 
 const isValidLocale = (value: string | null): value is UiLocale => {
   return VALID_LOCALES.includes(value as UiLocale);
@@ -58,15 +40,10 @@ const readStorageLocale = (): UiLocale | null => {
 };
 
 const readNavigatorLocale = (): UiLocale => {
-  if (typeof navigator === 'undefined') {
+  if (typeof navigator === 'undefined' || !navigator.language) {
     return DEFAULT_UI_LOCALE;
   }
-  const langs = (navigator.languages && navigator.languages.length > 0)
-    ? navigator.languages
-    : [navigator.language].filter(Boolean) as string[];
-
-  const primary = (langs[0] || '').toLowerCase();
-  return primary.startsWith('ja') ? 'ja' : 'en';
+  return navigator.language.toLowerCase().startsWith('ja') ? 'ja' : 'en';
 };
 
 export const resolveUiLocale = (): UiLocale => {
@@ -102,12 +79,6 @@ interface LocaleContextValue {
 }
 
 const LocaleContext = createContext<LocaleContextValue | undefined>(undefined);
-
-const translate = (locale: UiLocale, key: TranslationKey) => {
-  const localized = TRANSLATIONS[locale]?.[key];
-  if (localized) return localized;
-  return TRANSLATIONS[DEFAULT_UI_LOCALE][key] ?? key;
-};
 
 export const LocaleProvider = ({ children }: { children: React.ReactNode }) => {
   const [uiLocale, setUiLocaleState] = useState<UiLocale>(DEFAULT_UI_LOCALE);

@@ -14,6 +14,7 @@ import { STRATEGIES, DEFAULT_STRATEGY_ID } from '../constants';
 import { HistoryItem } from '../types';
 import { Button } from '../components/Button';
 import { useUser } from '../context/UserContext';
+import LocalizedText from './components/i18n/LocalizedText';
 
 type MultiContent = { twitter: string; linkedin: string; instagram: string };
 type ImageMap = Record<string, string>;
@@ -575,7 +576,9 @@ export default function Home() {
                   <Settings size={18} />
                 </div>
                 <div className="text-left">
-                  <h3 className="text-sm font-bold text-slate-700 tracking-tight">詳細オプション設定</h3>
+                  <h3 className="text-sm font-bold text-slate-700 tracking-tight">
+                    <LocalizedText k="home.advancedSettingsTitle" />
+                  </h3>
                   <p className="text-[10px] text-slate-400 font-medium">トーン、長さ、視点、追加指示など</p>
                 </div>
               </div>
@@ -676,7 +679,9 @@ export default function Home() {
                 {/* Special Modes (Conditional) */}
                 {(selectedPlatform === 'twitter' || selectedPlatform === 'tiktok') && (
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">プラットフォーム専用モード</h4>
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                      <LocalizedText k="home.platformModeLabel" />
+                    </h4>
                     {selectedPlatform === 'twitter' && (
                       <div className="space-y-3">
                         <label className="flex items-center justify-between cursor-pointer group">
@@ -842,7 +847,9 @@ export default function Home() {
                 <section className="space-y-4">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-700">スレッド</h3>
+                      <h3 className="text-sm font-bold text-slate-700">
+                        <LocalizedText k="home.threadSectionTitle" />
+                      </h3>
                       <p className="text-[10px] text-slate-400 uppercase tracking-[0.3em]">各ツイート単位で編集・コピーできます</p>
                     </div>
                     <button
