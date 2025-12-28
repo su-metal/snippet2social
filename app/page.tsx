@@ -9,6 +9,7 @@ import {
   Crown, User, Building2, Clock, X, Trash2, History,
   Languages, Ruler, Smile, Heart, Wand2
 } from 'lucide-react';
+import { useLocale } from '../context/LocaleContext';
 import { STRATEGIES, DEFAULT_STRATEGY_ID } from '../constants';
 import { HistoryItem } from '../types';
 import { Button } from '../components/Button';
@@ -57,6 +58,7 @@ const INTENTS = [
 
 export default function Home() {
   const { isPro, usageCount, maxUsage, incrementUsage } = useUser();
+  const { t } = useLocale();
   const [inputText, setInputText] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
   const [multiContent, setMultiContent] = useState<MultiContent | null>(null);
@@ -797,7 +799,7 @@ export default function Home() {
         {(status === 'success' || generatedContent) && (
           <div id="result-section" className="space-y-8 animate-fade-in duration-700">
             <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-              <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">AI生成された投稿</h2>
+              <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('home.generatedPostsSectionTitle')}</h2>
               <div className="flex items-center gap-2">
                 <button
                   type="button"

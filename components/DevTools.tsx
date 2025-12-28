@@ -2,10 +2,17 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
+import { useLocale, UiLocale, TranslationKey } from '../context/LocaleContext';
 import { Settings, RefreshCw, UserCheck, ShieldAlert, GripVertical, Minimize2 } from 'lucide-react';
+
+const LANGUAGE_OPTIONS: { id: UiLocale; labelKey: TranslationKey }[] = [
+  { id: 'ja', labelKey: 'devtools.languageOption.ja' },
+  { id: 'en', labelKey: 'devtools.languageOption.en' },
+];
 
 export const DevTools: React.FC = () => {
   const { isPro, togglePro, usageCount, resetUsage, maxUsage } = useUser();
+  const { uiLocale, setUiLocale, t } = useLocale();
   const [isExpanded, setIsExpanded] = useState(true);
   const [position, setPosition] = useState({ x: -20, y: -100 });
   const [isDragging, setIsDragging] = useState(false);
@@ -151,10 +158,33 @@ export const DevTools: React.FC = () => {
                   className={`h-full transition-all duration-700 ease-out ${isPro ? 'bg-amber-500' : usageCount >= maxUsage ? 'bg-red-500' : 'bg-brand-500'}`}
                   style={{ width: isPro ? '100%' : `${Math.min((usageCount / maxUsage) * 100, 100)}%` }}
                 />
-              </div>
             </div>
+          </div>
 
-            <div className="flex gap-2 pt-2">
+          <div className="flex flex-col gap-1">
+            <span className="text-[9px] text-slate-400 font-bold uppercase">{t('devtools.languageLabel')}</span>
+            <div className="flex gap-2">
+              {LANGUAGE_OPTIONS.map((option) => {
+                const isActive = uiLocale === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                  onClick={() => setUiLocale(option.id, { syncUrl: true })}
+                    className={`flex-1 text-[10px] font-bold py-2 px-3 rounded-xl border transition-all ${
+                      isActive
+                        ? 'bg-slate-700 text-white border-slate-600'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600 hover:text-white'
+                    }`}
+                  >
+                    {t(option.labelKey)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-2">
               <button
                 type="button"
                 onClick={togglePro}
